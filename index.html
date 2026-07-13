@@ -70,6 +70,7 @@
   .log-table td{padding:6px 6px 6px 0;border-bottom:1px solid #EDF1F4;font-variant-numeric:tabular-nums;color:#2E4A5D}
   .log-table .ok{color:var(--work);font-weight:600}
   .log-table .part{color:var(--rest);font-weight:600}
+  .log-del{border:none;background:none;color:#B0421F;font-size:15px;font-weight:700;cursor:pointer;padding:2px 4px}
   .log-actions{display:flex;gap:8px;margin:2px 0 12px}
   .log-actions button{
     flex:1;border:1.5px solid #C9D6DE;background:#fff;border-radius:10px;padding:10px 0;
@@ -146,6 +147,11 @@ function addLogEntry(entry){
   const arr = loadLog() || [];
   arr.push(entry);
   return saveLog(arr);
+}
+function deleteLogEntry(startIso){
+  const arr = loadLog() || [];
+  const next = arr.filter(e => e.start !== startIso);
+  return saveLog(next);
 }
 function logCSV(){
   const arr = loadLog() || [];
@@ -302,18 +308,19 @@ function renderSetup(){
         <td>${e.lato}</td>
         <td>${Math.round(e.durSec/60)}′</td>
         <td class="${e.completed?"ok":"part"}">${e.completed?"✓":e.blocksDone+"/"+e.blocksTotal}</td>
+        <td><button class="log-del" data-start="${e.start}" aria-label="Elimina sessione">✕</button></td>
       </tr>`;
     }).join("");
     logHtml = `
       <table class="log-table">
-        <tr><th>Data</th><th>Ora</th><th>Lato</th><th>Durata</th><th>Esito</th></tr>
+        <tr><th>Data</th><th>Ora</th><th>Lato</th><th>Durata</th><th>Esito</th><th></th></tr>
         ${rows}
       </table>
       <div class="log-actions">
         <button id="csv">Esporta CSV (${log.length})</button>
         <button id="wipe">Svuota registro</button>
       </div>
-      <div class="log-note">I dati restano su questo dispositivo/browser. Esporta il CSV periodicamente come copia.</div>`;
+      <div class="log-note">I dati restano su questo dispositivo/browser. Esporta il CSV periodicamente come copia. Tocca ✕ per eliminare una singola sessione${log.length>10?" (mostrate solo le ultime 10)":""}.</div>`;
   }
 
   app.innerHTML = `
@@ -392,6 +399,10 @@ function renderSetup(){
       saveLog([]); renderSetup();
     }
   };
+  app.querySelectorAll(".log-del").forEach(b=>b.onclick=()=>{
+    deleteLogEntry(b.dataset.start);
+    renderSetup();
+  });
   document.getElementById("start").onclick = ()=>{
     initAudio(); beep(880,.05);
     state.playlist = buildPlaylist(state.lato, state.restSerie, state.restEx);
